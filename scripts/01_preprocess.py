@@ -325,15 +325,12 @@ def write_dataset_yaml(
   train_sequences: List[str],
   val_sequences: List[str],
 ) -> Path:
-  """
-  Generate the Ultralytics-compatible dataset.yaml.
-
-  Points to processed images directory and maps:
-    YOLO class 0 -> "person"  (VisDrone category 1 / pedestrian)
-  """
-  config_dir.mkdir(parents=True, exist_ok= True)
+  """Write configs/dataset.yaml for ultralytics training."""
+  config_dir.mkdir(parents=True, exist_ok=True)
   abs_out = out_dir.resolve()
+
   def seq_paths(sequences: List[str]) -> str:
+    # build the yaml list of image dirs for train/val
     return "\n".join(f" - {abs_out / 'images' / s}" for s in sequences)
 
   n_train_pct = int((1 - DEFAULT_VAL_SPLIT)*100)

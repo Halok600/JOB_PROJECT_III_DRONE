@@ -194,34 +194,32 @@ def train(args : argparse.Namespace) -> None:
 
     model = YOLO(str(MODEL_YAML))
     start_time = time.time()
-    # --- Launch training ---
-    # All hardcoded safety params are explicitly set here, not in a config
-    # file, so they cannot be accidentally overridden.
-
+    # launch training - hardcoded safety params stay here so they cant be
+    # accidentally overridden by a yaml or env var
     results = model.train(
-        # --- Data & architecture ---
+        # data and weights
         data=str(DATASET_YAML),
-        pretrained=not args.resume,        # transfer yolov8n.pt weights on fresh run
+        pretrained=not args.resume,  # use pretrained yolov8n weights on fresh run
         model=str(MODEL_YAML) if not args.resume else str(
             RUNS_DIR / "train" / RUN_NAME / "weights" / "last.pt"
         ),
 
-        # --- *** VRAM SAFETY — DO NOT CHANGE FOR RTX 3050 6GB *** ---
-        imgsz=args.imgsz,                  # 1280: native high-res, single forward pass
-        batch=args.batch,                  # 4: peak ~4.8 GB VRAM with FP16
-        amp=args.amp,                      # True: FP16 halves activation memory
-        workers=args.workers,              # 2: conservative CPU DataLoader threads
+        # VRAM safety - RTX 3050 6GB, do NOT change these
+        imgsz=args.imgsz,   # 1280 - single high-res pass (no SAHI needed)
+        batch=args.batch,   # 4 max at imgsz=1280 with FP16, OOM above this
+        amp=args.amp,       # FP16 - halves activation memory
+        workers=args.workers, # 2 - more causes CPU ram spike
 
-        # --- Training schedule ---
+        # training schedule
         epochs=args.epochs,
-        patience=50,                       # early stopping: halt if no mAP improvement
+        patience=50,  # stop early if no mAP gain for 50 epochs
         optimizer="AdamW",
         lr0=0.001,
         lrf=0.01,
         warmup_epochs=3,
         weight_decay=0.0005,
 
-        # --- Augmentation ---
+        # augmentation (tuned for drone altitude variability)
         mosaic=1.0,
         hsv_h=0.015,
         hsv_s=0.7,
@@ -233,12 +231,12 @@ def train(args : argparse.Namespace) -> None:
         degrees=5.0,
         close_mosaic=10,
 
-        # --- Loss weights ---
+        # loss weights
         box=7.5,
         cls=0.5,
         dfl=1.5,
 
-        # --- Output & logging ---
+        # output
         project=str(RUNS_DIR / "train"),
         name=RUN_NAME,
         resume=args.resume,
